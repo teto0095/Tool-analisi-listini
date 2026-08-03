@@ -19,7 +19,6 @@ st.markdown("""
     .player-name { font-size: 1.2rem; font-weight: 600; color: #333; margin-bottom: 5px; }
     .price-big { font-size: 2.5rem; font-weight: 800; margin-bottom: 5px; }
     .price-detail { font-size: 0.9rem; color: #666; line-height: 1.4; }
-    .min-alert { color: #dc3545; font-weight: bold; font-size: 0.8rem; margin-left: 5px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -38,13 +37,8 @@ testi = {
         "sconto_a": "Sconto Player A (%)",
         "sconto_b": "Sconto Player B (%)",
         "sconto_c": "Sconto Player C (%)",
-        "msp_title": "### 🛑 Minimo Tassabile (€)",
-        "msp_caption": "*(Prezzo base minimo prima del fuel)*",
-        "msp_a": "Minimo Player A (€)",
-        "msp_b": "Minimo Player B (€)",
-        "msp_c": "Minimo Player C (€)",
         "fuel_title": "### ⛽ Fuel Surcharge",
-        "fuel_caption": "*(Usa il punto per i decimali, es: 2.25)*",
+        "fuel_caption": "*(Usa il punto per i decimali, es: 2.25 — step 0.25)*",
         "fuel_a": "Fuel Player A (%)",
         "fuel_b": "Fuel Player B (%)",
         "fuel_c": "Fuel Player C (%)",
@@ -52,7 +46,6 @@ testi = {
         "winner_msg": "🏆 Il partner più competitivo per questa tratta è **{vincitore}** con un prezzo totale di **€ {prezzo:.2f}**",
         "nolo": "Nolo:",
         "sconto": "Sconto:",
-        "min_applied": "⚠️ Min.",
         "chart_title": "📈 Analisi Visiva Costi Totali",
         "chart_yaxis": "Prezzo Totale Inclusivo (€)",
         "matrix_title": "🗃️ Matrici dei Listini Base",
@@ -62,9 +55,9 @@ testi = {
         "matrix_only_b": "Solo Player B",
         "matrix_only_c": "Solo Player C",
         "err_int": "⚠️ {label}: inserisci un numero intero valido. Uso {default}.",
-        "err_float": "⚠️ {label}: inserisci un decimale valido. Uso {default:.2f}.",
-        "err_range_int": "⚠️ {label}: valore fuori range. Uso {default}.",
-        "err_range_float": "⚠️ {label}: valore fuori range. Uso {default:.2f}.",
+        "err_float": "⚠️ {label}: inserisci un decimale valido (es. 2.25). Uso {default:.2f}.",
+        "err_range_int": "⚠️ {label}: valore fuori range ({min_v}-{max_v}). Uso {default}.",
+        "err_range_float": "⚠️ {label}: valore fuori range ({min_v}-{max_v}). Uso {default:.2f}.",
         "rounded": "↳ {label} arrotondato a {val:.2f}"
     },
     "English": {
@@ -77,13 +70,8 @@ testi = {
         "sconto_a": "Discount Player A (%)",
         "sconto_b": "Discount Player B (%)",
         "sconto_c": "Discount Player C (%)",
-        "msp_title": "### 🛑 Minimum Floor Price (€)",
-        "msp_caption": "*(Minimum base freight before fuel)*",
-        "msp_a": "Minimum Player A (€)",
-        "msp_b": "Minimum Player B (€)",
-        "msp_c": "Minimum Player C (€)",
         "fuel_title": "### ⛽ Fuel Surcharge",
-        "fuel_caption": "*(Use a dot for decimals, e.g., 2.25)*",
+        "fuel_caption": "*(Use a dot for decimals, e.g., 2.25 — 0.25 steps)*",
         "fuel_a": "Fuel Player A (%)",
         "fuel_b": "Fuel Player B (%)",
         "fuel_c": "Fuel Player C (%)",
@@ -91,7 +79,6 @@ testi = {
         "winner_msg": "🏆 The most competitive partner for this route is **{vincitore}** with a total price of **€ {prezzo:.2f}**",
         "nolo": "Freight:",
         "sconto": "Discount:",
-        "min_applied": "⚠️ Min.",
         "chart_title": "📈 Visual Analysis of Total Costs",
         "chart_yaxis": "Total Inclusive Price (€)",
         "matrix_title": "🗃️ Base Price Matrices",
@@ -101,9 +88,9 @@ testi = {
         "matrix_only_b": "Only Player B",
         "matrix_only_c": "Only Player C",
         "err_int": "⚠️ {label}: enter a valid integer. Using {default}.",
-        "err_float": "⚠️ {label}: enter a valid decimal. Using {default:.2f}.",
-        "err_range_int": "⚠️ {label}: value out of range. Using {default}.",
-        "err_range_float": "⚠️ {label}: value out of range. Using {default:.2f}.",
+        "err_float": "⚠️ {label}: enter a valid decimal (e.g., 2.25). Using {default:.2f}.",
+        "err_range_int": "⚠️ {label}: value out of range ({min_v}-{max_v}). Using {default}.",
+        "err_range_float": "⚠️ {label}: value out of range ({min_v}-{max_v}). Using {default:.2f}.",
         "rounded": "↳ {label} rounded to {val:.2f}"
     }
 }
@@ -136,20 +123,20 @@ def text_input_intero(label, key, default, min_v=0, max_v=100):
     try:
         val = int(float(raw))
         if val < min_v or val > max_v:
-            st.sidebar.error(t["err_range_int"].format(label=label, default=default))
+            st.sidebar.error(t["err_range_int"].format(label=label, min_v=min_v, max_v=max_v, default=default))
             return default
         return val
     except ValueError:
         st.sidebar.error(t["err_int"].format(label=label, default=default))
         return default
 
-def text_input_decimale_step(label, key, default, step=0.25, min_v=0.0, max_v=500.0): # max_v aumentato per i prezzi
+def text_input_decimale_step(label, key, default, step=0.25, min_v=0.0, max_v=100.0):
     raw = st.sidebar.text_input(label, value=f"{default:.2f}", key=key)
     raw = raw.strip().replace(",", ".")
     try:
         val = float(raw)
         if val < min_v or val > max_v:
-            st.sidebar.error(t["err_range_float"].format(label=label, default=default))
+            st.sidebar.error(t["err_range_float"].format(label=label, min_v=min_v, max_v=max_v, default=default))
             return default
         val_arrotondato = round(val / step) * step
         if abs(val_arrotondato - val) > 1e-9:
@@ -174,14 +161,7 @@ st.sidebar.caption(t["discount_caption"])
 sconto_a = text_input_intero(t["sconto_a"], "sconto_a", default=10)
 sconto_b = text_input_intero(t["sconto_b"], "sconto_b", default=15)
 sconto_c = text_input_intero(t["sconto_c"], "sconto_c", default=5)
-st.sidebar.divider()
 
-# MINIMO TASSABILE (FLOOR PRICE)
-st.sidebar.markdown(t["msp_title"])
-st.sidebar.caption(t["msp_caption"])
-msp_a = text_input_decimale_step(t["msp_a"], "msp_a", default=8.00, step=0.50)
-msp_b = text_input_decimale_step(t["msp_b"], "msp_b", default=9.00, step=0.50)
-msp_c = text_input_decimale_step(t["msp_c"], "msp_c", default=7.50, step=0.50)
 st.sidebar.divider()
 
 # FUEL DECIMALI
@@ -203,20 +183,10 @@ prezzo_base_a = listino_a.loc[fascia_selezionata, input_zona]
 prezzo_base_b = listino_b.loc[fascia_selezionata, input_zona]
 prezzo_base_c = listino_c.loc[fascia_selezionata, input_zona]
 
-# Calcolo Nolo Scontato Matematico
-nolo_calc_a = prezzo_base_a * (1 - (sconto_a / 100))
-nolo_calc_b = prezzo_base_b * (1 - (sconto_b / 100))
-nolo_calc_c = prezzo_base_c * (1 - (sconto_c / 100))
-
-# Controllo Floor Price (se calcolato < minimo tassabile -> usa minimo tassabile)
-prezzo_nolo_a = max(nolo_calc_a, msp_a)
-prezzo_nolo_b = max(nolo_calc_b, msp_b)
-prezzo_nolo_c = max(nolo_calc_c, msp_c)
-
-# Flag per visualizzare l'avviso di "Minimo Applicato"
-flag_min_a = nolo_calc_a < msp_a
-flag_min_b = nolo_calc_b < msp_b
-flag_min_c = nolo_calc_c < msp_c
+# Calcolo Nolo
+prezzo_nolo_a = prezzo_base_a * (1 - (sconto_a / 100))
+prezzo_nolo_b = prezzo_base_b * (1 - (sconto_b / 100))
+prezzo_nolo_c = prezzo_base_c * (1 - (sconto_c / 100))
 
 # Calcolo Finale (Nolo + Fuel)
 prezzo_finale_a = prezzo_nolo_a * (1 + (fuel_a / 100))
@@ -234,9 +204,6 @@ def get_text_color(prezzo):
     elif prezzo == prezzo_massimo: return "#dc3545"
     else: return "#6c757d"
 
-def get_min_badge(is_min):
-    return f'<span class="min-alert">{t["min_applied"]}</span>' if is_min else ""
-
 # --- 4. DASHBOARD ---
 st.title("📊 Pricing Intelligence Dashboard")
 st.markdown(t["comparison_msg"].format(tipo=input_tipo, kg=input_kg, zona=input_zona))
@@ -251,7 +218,7 @@ with col1:
     <div class="card" style="border-top: 5px solid #FF0000;">
         <div class="player-name">Player A</div>
         <div class="price-big" style="color: {get_text_color(prezzo_finale_a)};">€ {prezzo_finale_a:.2f}</div>
-        <div class="price-detail">{t["nolo"]} <b>€ {prezzo_nolo_a:.2f}</b> {get_min_badge(flag_min_a)}<br>{t["sconto"]} {sconto_a}% | Fuel: {fuel_a:.2f}%</div>
+        <div class="price-detail">{t["nolo"]} <b>€ {prezzo_nolo_a:.2f}</b><br>{t["sconto"]} {sconto_a}% | Fuel: {fuel_a:.2f}%</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -260,7 +227,7 @@ with col2:
     <div class="card" style="border-top: 5px solid #800080;">
         <div class="player-name">Player B</div>
         <div class="price-big" style="color: {get_text_color(prezzo_finale_b)};">€ {prezzo_finale_b:.2f}</div>
-        <div class="price-detail">{t["nolo"]} <b>€ {prezzo_nolo_b:.2f}</b> {get_min_badge(flag_min_b)}<br>{t["sconto"]} {sconto_b}% | Fuel: {fuel_b:.2f}%</div>
+        <div class="price-detail">{t["nolo"]} <b>€ {prezzo_nolo_b:.2f}</b><br>{t["sconto"]} {sconto_b}% | Fuel: {fuel_b:.2f}%</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -269,7 +236,7 @@ with col3:
     <div class="card" style="border-top: 5px solid #FFC107;">
         <div class="player-name">Player C</div>
         <div class="price-big" style="color: {get_text_color(prezzo_finale_c)};">€ {prezzo_finale_c:.2f}</div>
-        <div class="price-detail">{t["nolo"]} <b>€ {prezzo_nolo_c:.2f}</b> {get_min_badge(flag_min_c)}<br>{t["sconto"]} {sconto_c}% | Fuel: {fuel_c:.2f}%</div>
+        <div class="price-detail">{t["nolo"]} <b>€ {prezzo_nolo_c:.2f}</b><br>{t["sconto"]} {sconto_c}% | Fuel: {fuel_c:.2f}%</div>
     </div>
     """, unsafe_allow_html=True)
 
